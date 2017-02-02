@@ -133,8 +133,7 @@ for (x in 1:length(whole_dataset)){
 # ---------------------------------
 
 rm(list=ls(pattern="tbl_"), whole_dataset, g_name, gauge_names, x, g_data,
-runs, dates_to_remove, missing_data, all.dates,wrong.minutes,
-filepath, unique_tag)
+   runs, dates_to_remove, missing_data, all.dates,wrong.minutes, unique_tag)
 
 whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))#
 gauge_names    <- ls(whole_dataset)
@@ -150,9 +149,9 @@ gauge_names    <- ls(whole_dataset)
 # ---------------------------------
 
 # Set up meta data table:
-meta_data_patched <- data.frame("Gauge Name"= character(0),
-                                "No. of NAs"= integer(0),
-                                "Patched Singles"= integer(0),
+meta_data_patched <- data.frame("Gauge Name"= character(length(whole_dataset)),
+                                "Number of NAs"= integer(length(whole_dataset)),
+                                "Patched_NAs"= integer(length(whole_dataset)),
                                 stringsAsFactors= FALSE)
 
 #---------------------------------------
@@ -167,7 +166,7 @@ whole_dataset <- lapply(whole_dataset, function(x) {
   return(x)})
 
 for (x in 1:length(whole_dataset)){
-  g_data = data.frame(whole_dataset[[x]])
+  g_data = whole_dataset[[x]]
   # ---- **** ----
   
   g_name  <- gauge_names[x]
@@ -175,7 +174,7 @@ for (x in 1:length(whole_dataset)){
   #---------------------------------------
   
   # Determin the number of initial errors in river level:
-  patched_singles = length(which(is.na(g_data$value)))
+  origional_NAs = length(which(is.na(g_data$value)))
   
   #---------------------------------------
   
@@ -185,16 +184,22 @@ for (x in 1:length(whole_dataset)){
   #---------------------------------------
   
   # Determin the final number of errors in river level:
-  number_of_NAs = length(which(is.na(g_data$value)))
+  updated_NAs = length(which(is.na(g_data$value)))
   
   #---------------------------------------
   
+  # ++++ **** ++++
+  # Origional:
   # Enter metadata:
-  entry    <- data.frame("Gauge Name"= g_name,
-                         "No. of NAs"= number_of_NAs,
-                         "Patched Singles"= patched_singles - number_of_NAs,
-                         stringsAsFactors= FALSE)
-  meta_data_patched  <- rbind(meta_data_patched, entry)
+  # entry    <- data.frame("Gauge Name"= g_name,
+  #                        "Number of NAs"= updated_NAs,
+  #                        "Patched_NAs"= origional_NAs - updated_NAs,
+  #                        stringsAsFactors= FALSE)
+  # meta_data_patched  <- rbind(meta_data_patched, entry) # This was origionally empty, not the predefined length above.
+  #
+  # New:
+  meta_data_patched[x,] = c(g_name, updated_NAs, (origional_NAs - updated_NAs)) 
+  # ---- **** ----
   
   #---------------------------------------
   
@@ -222,10 +227,7 @@ save(meta_data_patched, file= "meta_data.Rdata")
 # ###### Tidy the Workspace #######
 # ---------------------------------
 
-rm(g_data, entry, meta_data_patched, number_of_NAs, gauge_names, whole_dataset, x, patched_singles, unique_tag, g_name, correlation.data) # , filepath) # <-- Surplus
-
-
-
+rm(g_data, meta_data_patched, gauge_names, whole_dataset, x, unique_tag, g_name, correlation.data, origional_NAs, updated_NAs) # , filepath) # <-- Surplus
 
 
 
@@ -254,14 +256,16 @@ library(foreign)
 # setwd(dir="H:/PhD Documents/Task 1/R Scripts/Iterations/")<-- Surplus (we have not changed very start)
 
 # Create a driectory for the output data:
-dir.create("Low Flow Objects")
+if (!dir.exists("Low Flow Objects")){
+  dir.create("Low Flow Objects")}
 
-whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
-gauge_names    <- ls(whole_dataset)
 
 #---------------------------------------
 # Calculate Base levels using WMO method
 #---------------------------------------
+
+whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
+gauge_names    <- ls(whole_dataset)
 
 for (x in 1:length(whole_dataset)){
   
@@ -296,7 +300,9 @@ for (x in 1:length(whole_dataset)){
   # Calculate WMO Base Level:
   
   # 1 - create low flow object for analysis
-  g_lfo <- createlfobj(x = g_data, baseflow = TRUE, hyearstart = 1) # can change start of hydrolocical year (1-12)
+  g_lfo <- suppressWarnings(createlfobj(x = g_data,
+                                        baseflow = TRUE,
+                                        hyearstart = 1)) # can change start of hydrolocical year (1-12)
   
   date <- paste(g_lfo$year, g_lfo$month, g_lfo$day, sep = "-")
   date <- as.POSIXct(date, format="%Y-%m-%d", tz = "UTC")
@@ -321,8 +327,6 @@ for (x in 1:length(whole_dataset)){
   # filepath <- paste("Low Flow Objects/", name,'.Rdata',sep = "") # <-- surplus
   # save(list = name, file = filepath)# <-- surplus
 }
-
-# This may give some errors about Na's and missing values - I think that's fine.
 
 #### As far as I can tell from the test data, all dates are still there ###
 #### Some Na's are now at the end of the data ###
@@ -485,4 +489,4 @@ save(base_level_indexes, file = filepath)
 #---------------------------------------
 
 # Tidy the Workspace
-rm(bli, filepath, x, BFI, bli_wmo, name,r_level, wmo_blis, entry, g_data, lh_blis, g_data, lyne_hollick, g_name, level)
+#rm(bli, filepath, x, BFI, bli_wmo, name,r_level, wmo_blis, entry, g_data, lh_blis, g_data, lyne_hollick, g_name, level)
