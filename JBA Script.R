@@ -1,52 +1,52 @@
- 
-
-
-
-########################################################################################
+# ------------------------------------------------------------------------------
 # Final Script For JBA
 # Ben Smith
 # 26/01/2017
 # Newcastle University
-########################################################################################
+# ------------------------------------------------------------------------------
 
 
-# QUESTIONS #
+# ---- QUESTIONS ---- #
 # Would you like to save the processed/interpolated data to disk midway through the script?
-# Alter the below variable accordingly... (y/n)
-save_data <- "y"  # <--- This should be "y" for save, and "n" for do not save
+  # Alter the below variable accordingly... (y/n)
+  save_data <- "y"
 
 
 # ---------------------------------
-# From Iteration Preperation
+# Preamble - You will need to change this.
 # ---------------------------------
+  
+  # Set up a file ('Temp_file' and put your raw in it)
 
-# ----- Load and Fix Dates 
-setwd(dir="H:/PhD Documents/Task 1/R Scripts/Iterations/Temp_file/")
-load("../../Data - JBA_Raw_Data.RData")
+  # Set the directory to the above file:
+  setwd(dir="H:/PhD Documents/Task 1/R Scripts/Iterations/Temp_file/")
 
-library(zoo) # needed for na.approx
+  # Load the data - you may need to change the file name:
+  load("Data - JBA_Raw_Data.RData")
+  
+  # Load all required packages:
+  install.packages("zoo")
+  install.packages("xts")
+  install.packages("lfstat")
+  install.packages("foreign")
+  library(zoo)
+  library(xts)
+  library(lfstat)
+  library(foreign)
 
-# ++++ Temp ++++
-# Origional:
-# whole_dataset <- setNames(lapply(ls(pattern="tbl"), function(x) get(x)), ls(pattern="tbl"))
-# gauge_names   <- sapply(ls(whole_dataset), function(x) x = substr(x,5,(nchar(x)-8)))
-# New:
-riv_1 = tbl_445210SG_River
-riv_2 = tbl_F2290SG_River
-riv_3 = tbl_F3004SG_River
-rm(list=ls(pattern="tbl_"))
-
-whole_dataset <- setNames(lapply(ls(pattern="riv"), function(x) get(x)), ls(pattern="riv"))
-gauge_names   <- ls(whole_dataset)
-
-# ---- **** ----
-
-
-# (as.POSIXct(x$Date, format="%Y-%m-%d %H:%M:%OS", tz = "UTC"))
-# fast_strptime
+  whole_dataset <- setNames(lapply(ls(pattern="tbl"), function(x) get(x)), ls(pattern="tbl"))
+  gauge_names   <- sapply(ls(whole_dataset), function(x) x = substr(x,5,(nchar(x)-8)))
+  
+  # For test runs:
+    # riv_1 = tbl_445210SG_River
+    # riv_2 = tbl_F2290SG_River
+    # riv_3 = tbl_F3004SG_River
+    # rm(list=ls(pattern="tbl_"))
+    # whole_dataset <- setNames(lapply(ls(pattern="riv"), function(x) get(x)), ls(pattern="riv"))
+    # gauge_names   <- ls(whole_dataset)
 
 # ---------------------------------
-# Main Script
+# Section 1 - Prepare the data
 # ---------------------------------
 
 for (x in 1:length(whole_dataset)){
@@ -120,19 +120,6 @@ for (x in 1:length(whole_dataset)){
 
   unique_tag <- paste("RL_", g_name, sep="")
   assign(unique_tag, value = g_data)
-  
-  # ++++ Temp ++++
-  # Origional:
-  # filepath <- paste("Iteration Preperation - basic data/", unique_tag, '.Rdata', sep="")
-  # save(list = unique_tag, file = filepath)
-  
-  # New:
-  # The below works, but I don't think you need to save the data at this pint.
-  # filepath <- paste("Temp_file/", unique_tag, '.Rdata', sep="")
-  # save(list = unique_tag, file = filepath)
-  
-  # Note - you need to remove the tbl data now, and leave the RL_data 
-  # ---- **** ----
 
 }
 
@@ -150,10 +137,8 @@ gauge_names    <- ls(whole_dataset)
 # ---------------------------------
 # Interpolate data 
 #
-# This records the number of NAs,
-# interpolates over any singular NAs
-# and overwrites input data. Also
-# counts number of interpolations.
+# This records the number of NAs, interpolates over any singular NAs
+# and overwrites input data. Also counts number of interpolations.
 # ---------------------------------
 
 # Set up meta data table:
@@ -164,11 +149,7 @@ meta_data_patched <- data.frame("Gauge Name"= character(length(whole_dataset)),
 
 #---------------------------------------
 
-  # ++++ **** ++++
-  # Origional:
-  # for (x in 1:length(whole_dataset)){
-  # g_data = data.frame("date" = whole_dataset[[x]]$ObsDate, "value" =  whole_dataset[[x]]$Value)
-  # New:
+
 whole_dataset <- lapply(whole_dataset, function(x) {
   colnames(x) <- c("date", "value")
   return(x)})
@@ -195,25 +176,9 @@ for (x in 1:length(whole_dataset)){
   updated_NAs = length(which(is.na(g_data$value)))
   
   #---------------------------------------
-  
-  # ++++ **** ++++
-  # Origional:
-  # Enter metadata:
-  # entry    <- data.frame("Gauge Name"= g_name,
-  #                        "Number of NAs"= updated_NAs,
-  #                        "Patched_NAs"= origional_NAs - updated_NAs,
-  #                        stringsAsFactors= FALSE)
-  # meta_data_patched  <- rbind(meta_data_patched, entry) # This was origionally empty, not the predefined length above.
-  #
-  # New:
+
+  # Add information to data.frame:
   meta_data_patched[x,] = c(g_name, updated_NAs, (origional_NAs - updated_NAs)) 
-  # ---- **** ----
-  
-  #---------------------------------------
-  
-  # runs = rle(is.na(g_data$value))
-  # if (length(runs$lengths[runs$values==T & runs$lengths==1]) >0){print("Not all single NAs were removed")
-  #   } else {print("worked")}
   
   #---------------------------------------
   
@@ -223,7 +188,7 @@ for (x in 1:length(whole_dataset)){
 }
 
 # Save dataset to disk:
-if (save_data = "y"){
+if (save_data == "y"){
   
   whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
   gauge_names    <- ls(whole_dataset)
@@ -245,42 +210,28 @@ if (save_data = "y"){
 # Save meta data:
 save(meta_data_patched, file= "meta_data.Rdata")
 
-
 # ---------------------------------
-# ###### Tidy the Workspace #######
-# ---------------------------------
-
-rm(g_data, meta_data_patched, gauge_names, whole_dataset, x, unique_tag, g_name, correlation.data, origional_NAs, updated_NAs, filepath, gauge_names)
-
+# Tidy the Workspace
+rm(g_data, meta_data_patched, gauge_names, whole_dataset, x, unique_tag, g_name,
+   correlation.data, origional_NAs, updated_NAs, filepath, gauge_names)
 
 
-
-
-
-
-########################################################################################
-# From Iteration_1
+# ------------------------------------------------------------------------------
+# Section 2
 #
-# Aim: calculate base level indexes for each gauge. Display these in a table and have a dataset.
-# This simply produces the lowflow objects, it does not process them (I think).
-########################################################################################
+# Calculate base level indexes for each gauge. Display these in a table.
+# This simply produces the lowflow objects (calculates base level).
+# ------------------------------------------------------------------------------
 
 
 # ---------------------------------
 # Preamble
 # ---------------------------------
 
-# install.packages("xts")
-# install.packages("lfstat")
-# install.packages("foreign")
-
-library(xts)
-library(lfstat)
-library(foreign)
-
 # setwd(dir="H:/PhD Documents/Task 1/R Scripts/Iterations/Interpolated data/") <-- Surplus
 # sapply(list.files(pattern="RL_"),load,.GlobalEnv)<-- Surplus
 # setwd(dir="H:/PhD Documents/Task 1/R Scripts/Iterations/")<-- Surplus (we have not changed very start)
+
 
 # Create a driectory for the output data:
 if (!dir.exists("Low Flow Objects")){
@@ -326,15 +277,13 @@ for (x in 1:length(whole_dataset)){
   
   # Calculate WMO Base Level:
   
-  # 1 - create low flow object for analysis
+  # Create low flow object for analysis
   g_lfo <- suppressWarnings(createlfobj(x = g_data,
                                         baseflow = TRUE,
                                         hyearstart = 1)) # can change start of hydrolocical year (1-12)
   
   date <- paste(g_lfo$year, g_lfo$month, g_lfo$day, sep = "-")
   date <- as.POSIXct(date, format="%Y-%m-%d", tz = "UTC")
-  
-  # g_lfo <- cbind(date, g_lfo) <-- surplus
   
   temp_data <- data.frame("date"    = date,
                           "value"   = round(g_lfo$flow, digits=3),
@@ -345,37 +294,24 @@ for (x in 1:length(whole_dataset)){
   
   temp_data$bl_wmo[is.na(temp_data$value)] = NA
   
-  name      <- paste(g_name, "lfo", sep = "_")
+  name <- paste(g_name, "lfo", sep = "_")
   assign(name, value = temp_data)
   
-  #---------------------------------------
-  
-  # Save low flow objects:
-  # filepath <- paste("Low Flow Objects/", name,'.Rdata',sep = "") # <-- surplus
-  # save(list = name, file = filepath)# <-- surplus
 }
 
-#### As far as I can tell from the test data, all dates are still there ###
-#### Some Na's are now at the end of the data ###
+# As far as I can tell from the test data, all dates are still there
+# Some Na's are now at the end of the data
 
 #---------------------------------------
 
 # Tidy workspace (leaves only lfo's):
-
-
-# ++++ **** ++++
-# Origional:
-# rm(g_lfo, list=setdiff(ls(), ls(pattern = "*lfo")))
-# whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
-# New:
 rm(list=setdiff(ls(), ls(pattern = "RL")))
-whole_dataset  <- setNames(lapply(ls(pattern="*lfo"), function(x) get(x)), ls(pattern="lfo"))
-# ---- **** ----
-
-gauge_names    <- ls(whole_dataset)
-
 
 #---------------------------------------
+
+whole_dataset  <- setNames(lapply(ls(pattern="*lfo"), function(x) get(x)), ls(pattern="lfo"))
+
+gauge_names    <- ls(whole_dataset)
 
 # Patch any 'trivial' missing days in base level data:
 
@@ -387,13 +323,8 @@ for (x in 1:length(whole_dataset)){
   g_data$value <- na.approx(g_data$value, maxgap = 1, na.rm = F)
   g_data$bl_wmo <- na.approx(g_data$bl_wmo, maxgap = 1, na.rm = F)
 
-  # ++++ **** ++++
-  # Origional:
-  # ...
-  # New:
-  # # This is to save what is done in the funciton - currently NAs are filled and forgoten.
   assign(g_name, value = g_data)
-  # ---- **** ----
+
 }
 
 # Refill 'whole dataset' with patched data:
@@ -409,27 +340,6 @@ whole_dataset  <- setNames(lapply(ls(pattern="*lfo"), function(x) get(x)), ls(pa
 
 # Calculate WMO Base Level indexes for each record:
 
-# ++++ *** ++++
-# Origional:
-# ptm <- proc.time()
-#  wmo_blis <- data.frame("gauge"  = character(),
-#                         "bli_wmo" = numeric(),
-#                         stringsAsFactors=F)
-# 
-#  for (x in 1:length(whole_dataset)){
-#    g_name <- gauge_names[[x]]
-#    g_data <- whole_dataset[[x]]
-# 
-#    bli_wmo <- sum(g_data$bl_wmo, na.rm = TRUE) / sum(g_data$value, na.rm = TRUE)
-#    entry   <- data.frame("gauge" = substr(g_name, 1, (nchar(g_name)-4)),
-#                          "bli_wmo" = bli_wmo,
-#                          stringsAsFactors=F)
-#    wmo_blis <- rbind(wmo_blis, entry)
-# }
-# proc.time() - ptm
-#
-# New:
-# ptm <- proc.time()
 base_level_indexes <- data.frame("gauge"  = character(length(whole_dataset)),
                                  "bli_wmo" = numeric(length(whole_dataset)),
                                  "bli_lh" = numeric(length(whole_dataset)),
@@ -444,9 +354,6 @@ for (x in 1:length(whole_dataset)){
   
   base_level_indexes[x,c(1,2)] <- c(substr(g_name, 1, (nchar(g_name)-4)), round(bli_wmo, digits = 3))
 }
-# proc.time() - ptm
-# ---- **** ----
-  
 
 #---------------------------------------
 
@@ -462,51 +369,13 @@ for (x in 1:length(whole_dataset)){
   lyne_hollick = BFI(Q = g_data$value, alpha=0.925, ReturnQbase=TRUE, passes=3)
   
   g_data$"bl_lh" <- round(lyne_hollick$Qbase, digits = 3)
-  assign(g_name, value = g_data) # Changed slightly to remove whole_data[[x]]
-  
-  # name     <- g_name # <--- surplus
-  filepath <- paste("Low Flow Objects/", g_name,'.Rdata',sep = "") # was using 'name' instead of g_name
-  save(list = g_name, file = filepath) # was using 'name' instead of g_name
+  assign(g_name, value = g_data)
 
-    # ++++ **** ++++
-  # Origional:
-  
-# }
-# 
-# #---------------------------------------
-# 
-# whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
-# gauge_names    <- ls(whole_dataset)
-# 
-# 
-# lh_blis <- data.frame("gauge"  = character(),
-#                       "bli_lh" = numeric(),
-#                       stringsAsFactors=F)
-# 
-# #---------------------------------------
-# 
-# for (x in 1:length(whole_dataset)){
-#   g_name <- gauge_names[[x]]
-#   level  <- whole_dataset[[x]]$value
-#   
-#   bli <- BFI(level, alpha=0.925)
-#   entry <- data.frame(gauge = substr(g_name, 1, (nchar(g_name)-4)),
-#                       "bli_lh" = bli$BFI,
-#                       stringsAsFactors=F)
-#   lh_blis <- rbind(lh_blis, entry)
-# }
-#  
-# #---------------------------------------
-# 
-# # Save BLI table:
-# base_level_indexes <- data.frame("gauge"   = wmo_blis$gauge,
-#                                  "BLI_wmo" = round(wmo_blis$bli_wmo, digits = 3), # <-- surplus rounding
-#                                  "BLI_lh" = round(lh_blis$bli_lh, digits = 3))
-#  
-  # New:
+  filepath <- paste("Low Flow Objects/", g_name,'.Rdata',sep = "") 
+  save(list = g_name, file = filepath) 
+
   base_level_indexes[x,3] = round(lyne_hollick$BFI, digits = 3)
 }
-#---- **** ----
   
 # Save BLI table:
 filepath <- paste("Low Flow Objects/", "Base Level Indexes", '.Rdata',sep = "")
@@ -519,52 +388,34 @@ save(base_level_indexes, file = filepath)
 rm(missing, filepath, x, BFI, bli_wmo, lyne_hollick, g_name, base_level_indexes)
 
 
-
-################################################################################
-# Iteration_2
-# Ben Smith
-# 02/02/2017
-# Newcastle University
-#
-# Aim: Investigate BLI fluctuated if only peak levels are analysed
-# This is not included as it is auxilary information
-################################################################################
-
-
-
-################################################################################
-# Iteration_3
-# Ben Smith
-# 02/02/2017
-# Newcastle University
+# ------------------------------------------------------------------------------
+# Section 2
 #
 # Aim: Identify rapid rates of rise
-################################################################################
-
+# ------------------------------------------------------------------------------
 
 # ---------------------------------
 # Preamble
 # ---------------------------------
 
-# Data should still loaded into the workspace, else it can be loaded using the bewlow:
-# setwd(dir="Interpolated data/")
-# sapply(list.files(pattern="RL_"),load,.GlobalEnv)
-# setwd(dir="../")
+# If not already in workspace, load the data:
+  # setwd(dir="Interpolated data/")
+  # sapply(list.files(pattern="RL_"),load,.GlobalEnv)
+  # setwd(dir="../")
 
-whole_dataset  <- setNames(lapply(setdiff(ls(pattern="RL"), ls(pattern = "*lfo")),
-                                  function(x) get(x)),
-                           setdiff(ls(pattern="RL"), ls(pattern = "*lfo")))
-gauge_names    <- ls(whole_dataset)
+whole_dataset <- setNames(lapply(setdiff(ls(pattern="RL"), ls(pattern = "*lfo")),
+                                 function(x) get(x)),
+                          setdiff(ls(pattern="RL"), ls(pattern = "*lfo")))
+
+gauge_names   <- ls(whole_dataset)
 
 
-# ----------- PART 1 -------------
 # --------------------------------
-# ### Calc max rates of rise   ###
-# ----- Only run this once ----- #
-# This finds the greatest river RISE i.e. from lowest point to highest
+# Section 2 - Part 1
 # --------------------------------
 
-# Note - Make this section an apply function - it is very slow!
+# Calculate the greatest river RISE i.e. from lowest point to highest:
+  # Note - Make this section an apply function - it is very slow!
 for(i in (1:length(whole_dataset))){
   
   g_name <- gauge_names[i]
@@ -602,111 +453,17 @@ for(i in (1:length(whole_dataset))){
 rm(d, g_name, i, j, r, rise, g_data)
 
 
-
-# ---------- PART 1b -------------
-# --------------------------------
-# ### plotting rates of rise   ###
-# --------------------------------
-# 
-# # Plot events:
-# 
-# whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
-# gauge_names    <- ls(whole_dataset)
-# 
-# for(i in (1:length(whole_dataset))){
-#   
-#   g_name <- gauge_names[i]
-#   g_data <- whole_dataset[[i]]
-#   y_lim  <- c(0, summary(g_data$value)[6])
-#   g_data <- g_data[(length(g_data$date) - 50000) : length(g_data$date),]
-#   
-#   
-#   plot(g_data$date, g_data$value, type = "l", ylim = y_lim, main = g_name,
-#        xlab = "Date", ylab = "Level (m)")
-#   
-#   threshold = (quantile(g_data$value, probs = 0.50, na.rm = T) - 
-#                  quantile(g_data$value, probs = 0.05, na.rm = T))/4
-#   lines(g_data$date[g_data$rise > threshold], g_data$value[g_data$rise > threshold],
-#         type = "p", cex = 0.5, pch = 16, col = 4)
-#   
-#   threshold = (quantile(g_data$value, probs = 0.62, na.rm = T) - 
-#                  quantile(g_data$value, probs = 0.05, na.rm = T))/4
-#   lines(g_data$date[g_data$rise > threshold], g_data$value[g_data$rise > threshold],
-#         type = "p", cex = 0.5, pch = 16, col = 3)
-#   
-#   threshold = (quantile(g_data$value, probs = 0.75, na.rm = T) - 
-#                  quantile(g_data$value, probs = 0.05, na.rm = T))/4
-#   lines(g_data$date[g_data$rise > threshold], g_data$value[g_data$rise > threshold],
-#         type = "p", cex = 0.5, pch = 16, col = 2)
-#   
-# }
-# 
-# # Plot occurences:
-# 
-# whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
-# gauge_names    <- ls(whole_dataset)
-# 
-# for(i in (1:length(whole_dataset))){
-#   
-#   g_name <- gauge_names[i]
-#   g_data <- whole_dataset[[i]]
-#   y_lim  <- c(0, summary(g_data$value)[6])
-#   
-#   # -----
-#   
-#   threshold = (quantile(g_data$value, probs = 0.50, na.rm = T) - 
-#                  quantile(g_data$value, probs = 0.05, na.rm = T))/4
-#   
-#   rise = numeric(length = length(g_data$rise))
-#   rise [g_data$rise > threshold] = 1
-#   
-#   plot(g_data$date, g_data$value, type = "l",
-#        main = g_name, xlab = "level", ylab = "date", ylim = c(0,2))
-#   
-#   # -----
-#   
-#   lines(g_data$date[g_data$rise > threshold],
-#         rise[g_data$rise > threshold],
-#         type = "p", main = g_name, cex = 0.5, pch = 16, col = 4)
-#   
-#   # -----
-#   
-#   threshold = (quantile(g_data$value, probs = 0.62, na.rm = T) - 
-#                  quantile(g_data$value, probs = 0.05, na.rm = T))/4
-#   
-#   rise = numeric(length = length(g_data$rise))
-#   rise [g_data$rise > threshold] = 1
-#   
-#   lines(g_data$date[g_data$rise > threshold],
-#         rise[g_data$rise > threshold],
-#         type = "p", main = g_name, cex = 0.5, pch = 16, col = 3)
-#   
-#   # -----
-#   
-#   threshold = (quantile(g_data$value, probs = 0.75, na.rm = T) - 
-#                  quantile(g_data$value, probs = 0.05, na.rm = T))/4
-#   
-#   rise = numeric(length = length(g_data$rise))
-#   rise [g_data$rise > threshold] = 1
-#   
-#   lines(g_data$date[g_data$rise > threshold],
-#         rise[g_data$rise > threshold],
-#         type = "p", main = g_name, cex = 0.5, pch = 16, col = 2)
-#   
-# }
-
-
-# Calculate percentages of rises above 4/8, 5/8 & 6/8 rever level quantiles ----
+# Calculate percentages of rises above 4/8, 5/8 & 6/8 of river level quantiles:
 
 whole_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
 gauge_names    <- ls(whole_dataset)
 
 
-prop_rise = data.frame("gauge" = character(length(whole_dataset)), # changed these from an rbind format
+prop_rise = data.frame("gauge" = character(length(whole_dataset)),
                        "Qt.ft" = integer(length(whole_dataset)),
                        "Qt.st"   = integer(length(whole_dataset)),
                        "Qt.svt"   = integer(length(whole_dataset)),
-                       stringsAsFactors = FALSE) # , row.names = integer())
+                       stringsAsFactors = FALSE)
 
 for(i in (1:length(whole_dataset))){
   
@@ -714,8 +471,8 @@ for(i in (1:length(whole_dataset))){
   g_data <- whole_dataset[[i]]
   
   # -----
-  tot = length(g_data$value) - sum(is.na(g_data$value))
   
+  tot = length(g_data$value) - sum(is.na(g_data$value))
   
   Qt.ft <- (quantile(g_data$value, probs = 0.50, na.rm = T) - 
               quantile(g_data$value, probs = 0.05, na.rm = T))/4
@@ -727,36 +484,32 @@ for(i in (1:length(whole_dataset))){
   Qt.ft = length(which(g_data$rise > Qt.ft)) * 100/tot
   Qt.st = length(which(g_data$rise > Qt.st)) * 100/tot
   Qt.svt = length(which(g_data$rise > Qt.svt)) * 100/tot
-  
-  # entry = data.frame("gauge" = g_name,
-  #                    "Qt.ft" = round(Qt.ft, digits = 2),
-  #                    "Qt.st" = round(Qt.st, digits = 2),
-  #                    "Qt.svt" = round(Qt.svt, digits = 2),
-  #                    stringsAsFactors = FALSE, row.names = i)
-  # 
-  # prop_rise = rbind(prop_rise, entry) 
-  # Replaced by:
-  prop_rise[i,] <- c(g_name, round(Qt.ft, digits = 2),round(Qt.st, digits = 2),round(Qt.svt, digits = 2))
+
+  prop_rise[i,] <- c(g_name,
+                     round(Qt.ft, digits = 2),
+                     round(Qt.st, digits = 2),
+                     round(Qt.svt, digits = 2))
 }
 
-rm(g_data, prop_rise, g_name, gauge_names, i, j, Qt.ft, Qt.st, Qt.svt, tot)
+# Save the Rise Quantile data:
+assign("River_Rise_Quantiles", value = prop_rise)
+filepath <- paste("River_Rise_Quantiles", '.Rdata', sep="")
+save(list = "River_Rise_Quantiles", file = filepath)
 
-# View(prop_rise)
+# Tidy workspace:
+rm(g_data, prop_rise, g_name, gauge_names, i, Qt.ft, Qt.st, Qt.svt, tot,
+   filepath, River_Rise_Quantiles, whole_dataset)
 
-
-
-# ---------- PART 2 -------------
 # -------------------------------
-# ## Remove BL for River Level ##
-# This will leave behind river level from surface water inputs (in theory)
+# Section 1 - PART 2
+# -------------------------------
+# Remove base level from the total River Level to leave
+# behind only surface water inputs (in theory).
 # -------------------------------
 
-
-# THIS WILL CLEAR YOUR WORKSPACE!
-#rm(list = ls())
 
 # Reload all data to workspace:
-# setwd(dir="H:/PhD Documents/Task 1/R Scripts/Iterations/Interpolated data/")
+# setwd(dir="H:/PhD Documents/Task 1/R Scripts/Iterations/Temp_file/Interpolated data/")
 # sapply(list.files(pattern="RL_"),load,.GlobalEnv)
 
 gauge_dataset  <- setNames(lapply(setdiff(ls(pattern="RL"), ls(pattern = "*lfo")),
@@ -765,7 +518,7 @@ gauge_dataset  <- setNames(lapply(setdiff(ls(pattern="RL"), ls(pattern = "*lfo")
 
 gauge_names    <- ls(gauge_dataset)
 
-#-------
+# ---------------------------------
 
 setwd(dir="Low Flow Objects/")
 sapply(list.files(pattern="RL_"),load,.GlobalEnv)
@@ -841,7 +594,7 @@ for (i in 1:length(lf_dataset)){
   
   # Save the data:
   name     <- g_name
-  filepath <- paste(name,'.Rdata',sep = "")
+  filepath <- paste("Interpolated Data/", name,'.Rdata',sep = "")
   save(list = name, file = filepath)
   
 }
@@ -854,53 +607,85 @@ rm(BL,consec_ends, consec_runs, i, newindex, RL, runs, z, ends, ends_j, g_name, 
 rm(list= ls(pattern = "lfo"))
 
 
-# Lots was cut from the end of this script
 
-
-
-
-
-################################################################################
-# Iteration Final - Draft 3
-# Ben Smith
-# 05/10/2016
-# Newcastle University
-#
+# ------------------------------------------------------------------------------
+# Section 2
 # Aim: Find multisource floods using peak data, work out ratios for each event 
 # and average them for that gauge.
-################################################################################
+# ------------------------------------------------------------------------------
 
 
 # ---------------------------------
-# ----------- Preamble ------------
+# Preamble
 # ---------------------------------
 
 # setwd("../")
-setwd(dir="PhD Documents/Task 1/R Scripts/Iterations/Interpolated data/")
-sapply(list.files(pattern="RL_"),load,.GlobalEnv)
+# setwd(dir="H:/PhD Documents/Task 1/R Scripts/Iterations/Temp_file/Interpolated Data/")
+# sapply(list.files(pattern="RL_"),load,.GlobalEnv)
 
 ql_dataset  <- setNames(lapply(ls(pattern="RL"), function(x) get(x)), ls(pattern="RL"))
 ql_names    <- ls(ql_dataset)
 
-source("../Iteration Functions.R")
+# Set up a function to find peak fiver levels:
+find_peaks <- function (x, m = 672){
+  
+  # A 'peak' is defined as a local maxima with m points either side of it being smaller than it.
+  # Hence, the bigger the parameter m, the more stringent is the peak funding procedure.
+  # 'm' is the minimum number of time units either side of a peak where smaller river levels are requires.
+  # i.e. when m = 672, there are no larger peaks with in (15 mins*672) 7 days either side of that peak.
+  # The function can also be used to find local minima of any sequential vector x via find_peaks(-x).
+  # [http://stats.stackexchange.com/questions/22974/how-to-find-local-peaks-valleys-in-a-series-of-data]
+  
+  date <- x$date
+  val  <- x$value
+  lgth <- length(val)
+  
+  shape <- diff(sign(diff(val, na.pad = FALSE)))
+  
+  pks <- sapply(which(shape < 0), FUN = function(i){
+    z <- i - m + 1
+    z <- ifelse(z > 0, z, 1)
+    w <- i + m + 1
+    w <- ifelse(w < lgth, w, lgth)
+    if(all(val[c(z : i, (i + 2) : w)] <= val[i + 1], na.rm = T)) # I have added the ", na.rm = T"
+      return(i + 1) else return(numeric(0)) 
+  })
+  
+  pks <- unlist(pks)
+  
+  # Only use those peaks that are above threshold:
+  pks <- pks[which(val[pks] >= quantile(val, na.rm = T, probs = (0.98)))]
+  
+  # Above function find peaks. m is equal to 1 week, so any duplicates should be due to equal values.
+  # To remove these duplicates:
+  pks = pks[-(which(diff(pks) <= m))]
+  
+  # Now we need to select the top 10 events: 
+  df <- data.frame(index = c(1:length(pks)), value = val[pks])
+  df <- df[order(-df$value),]
+  df <- df[c(1:10),]
+  pks <- pks[df$index]
+  
+  return(pks)
+}
+
 
 # --------------------------------
-# ----------- PART 1 -------------
+# PART 1
 # --------------------------------
 
-multisouce_percentage <- data.frame("gauge" = character(length = 13),
-                                    "high_ql" = numeric(length = 13),
-                                    "high_bl" = numeric(length = 13),
-                                    "high_ms" = numeric(length = 13),
+# Calculate length of dataset for dataframe set up and for loop:
+dat_lgth = length(ql_dataset)
+
+# Set up dataframe to recieve source clasifications:
+source_percentages <- data.frame("gauge" = character(length = dat_lgth),
+                                    "high_ql" = rep(NA, dat_lgth),
+                                    "high_bl" = rep(NA, dat_lgth),
+                                    "high_ms" = rep(NA, dat_lgth),
                                     stringsAsFactors = FALSE)
 
 
-
-# pdf(file= "/PhD Documents/Task 1/R Scripts/Plots/peak_events.pdf")
-# par(mar = c(4,4,1,1), cex = 0.5) # b,l,t,r
-# layout(mat = matrix(c(1:10), ncol = 2)) # , heights = c(0.3,0.3,0.3,0.3,0.5,1)
-
-for(i in 1:13){
+for(i in 1:dat_lgth){
   
   g_data <- ql_dataset[[i]]
   
@@ -912,25 +697,29 @@ for(i in 1:13){
   # Calculate threshold to define starts/close of peak events:
   rl_threshold  <- quantile(g_data$value, na.rm = T, probs = (0.98))
   
-  # List all times included in peak events (threshold>>indexed peak>>threshold)
-  #peaks <- c()
-  
-  #set up dataframe to store values ready for averaging:
-  ratios = data.frame("ql" = numeric(length=10), "bl" = numeric(length=10), "ms" = numeric(length=10), "rl" = numeric(length=10))
+  # Set up dataframe to store values ready for averaging:
+  ratios = data.frame("ql" = rep(NA, 10),
+                      "bl" = rep(NA, 10),
+                      "ms" = rep(NA, 10),
+                      "rl" = rep(NA, 10))
   
   # Calculate threshold for defining the occurance of a rapid rise:
+    # This finds 1/4 of the median (with the very low levels removed)
+    # this is relatively arbitary and can be changed.
   ql_threshold <- (quantile(g_data$value, probs = 0.50, na.rm = T) - 
-                     quantile(g_data$value, probs = 0.05, na.rm = T))/4
-  
-  # y_lim = c(0,max(g_data$value, na.rm = TRUE))
+                   quantile(g_data$value, probs = 0.05, na.rm = T))/4
   
   # Cycle through events and calculate source statistics for each:
   for (j in 1:10){
     
+    # Recall start of peak event:
     start <- max(which(g_data$value[1:index[j]] <= rl_threshold)) +1
     
-    end   <- index[j] + min(which(g_data$value[index[j]:lgth_date] <= rl_threshold), na.rm=TRUE) - 1
+    # Recall end of peak event:
+    end   <- index[j] + min(which(g_data$value[index[j]:lgth_date] <= rl_threshold),
+                            na.rm=TRUE) - 1
     
+    # Set up vector of the indexes of a peak event:
     pk <- c(start:end)
     
     # Define high river levels there are:
@@ -941,33 +730,49 @@ for(i in 1:13){
     
     # Identify high base levels during top 10 peak events:
     high_bl = which(((g_data$value[pk] - g_data$q_level[pk])/g_data$value[pk]) >= 0.70)
+
+    # If you would like to plot a peak - you can run this rough code:
+     # plot(g_data$date[c((pk[1]-1000):(pk[length(pk)]+1000))],
+     #      g_data$value[c((pk[1]-1000):(pk[length(pk)]+1000))],
+     #      xlab = paste("Date (", g_data$date[pk[1]], ")", sep =""), ylab = "River Level (m)",
+     #      type = "l", ylim = c(0,0.7))
+     #  lines(g_data$date[pk],g_data$q_level[pk],
+     #        type="h", col = 8)
+     #  lines(x = g_data$date, y =(g_data$value-g_data$q_level),
+     #        type = "l", col = 4)
+     #  lines(g_data$date[pk[high_bl]],(g_data$value[pk[high_bl]]-g_data$q_level[pk[high_bl]]),
+     #        type = "p", col = '4', cex = 0.4, pch = 3)
+     #  lines(g_data$date[pk[high_ql]],g_data$value[pk[high_ql]],
+     #        type ="p",col = 2, cex = 0.4, pch = 18)
     
-    #     plot(g_data$date[c((pk[1]-1000):(pk[length(pk)]+1000))],
-    #          g_data$value[c((pk[1]-1000):(pk[length(pk)]+1000))],
-    #          type = "l", ylim = y_lim,
-    #          xlab = paste("Date (", g_data$date[pk[1]], ")", sep =""), ylab = "River Level (m)")
-    #       lines(g_data$date[pk],g_data$q_level[pk],
-    #             type="h", col = 8)
-    #       lines(g_data$date,(g_data$value-g_data$q_level),
-    #             type = "l", col = 4)
-    #       lines(g_data$date[pk[high_bl]],(g_data$value[pk[high_bl]]-g_data$q_level[pk[high_bl]]),
-    #             type = "p", col = '4', cex = 0.4, pch = 3)
-    #       lines(g_data$date[pk[high_ql]],g_data$value[pk[high_ql]],
-    #             type ="p",col = 2, cex = 0.4, pch = 18)
-    #     
     ratios[j,] = c(length(high_ql)/high_rl*100,
                    length(high_bl)/high_rl*100,
                    length(intersect(high_ql, high_bl))/high_rl*100,
                    high_rl)
-    
-    multisouce_percentage[i,] = c(ql_names[i],
-                                  round(mean(ratios[,1]),digits = 2),
-                                  round(mean(ratios[,2]),digits = 2),
-                                  round(mean(ratios[,3]),digits = 3))
   }
-  print(ratios)
+  
+  source_percentages[i,] = c(ql_names[i],
+                                round(mean(ratios[,1], na.rm = T),digits = 2),
+                                round(mean(ratios[,2], na.rm = T),digits = 2),
+                                round(mean(ratios[,3], na.rm = T),digits = 3))
   
 }
 
-# dev.off()
+# Save the data:
+# assign("source_percentages", value = source_percentages)
+filepath <- paste("source_percentages", '.Rdata', sep="")
+save(list = "source_percentages", file = filepath)
 
+# Also write data as a CSV:
+write.csv(source_percentages, file = "source_percentages.csv", row.names=FALSE)
+
+print("Analysis Complete, have a cup of tea and then view your results in the Temp File/source_percentages")
+
+# Tidy Workspace:
+rm(dat_lgth, start, end, filepath, find_peaks, g_data, high_bl, high_ql, high_rl, i, index, j, pk, lgth_date, source_percentages, ql_dataset, ql_names, ql_threshold, ratios, rl_threshold)
+
+proc.time() - ptm
+
+# --------------------------------
+# The End
+# --------------------------------
